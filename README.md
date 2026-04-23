@@ -29,10 +29,15 @@ Timedata importeres automatisk som HA statistik, så Energy dashboardet viser fo
 
 1. Åbn HACS i Home Assistant
 2. Gå til "Integrations"
-3. Klik på de tre prikker → "Custom repositories"
-4. Tilføj dette repository
-5. Klik på "ForsyningOnline" → "Download"
-6. Restart Home Assistant
+3. Klik på de tre prikker (⋮) → "Custom repositories"
+4. Indsæt repository URL:
+   ```
+   https://github.com/denogio/ha-forsyningonline
+   ```
+5. Vælg kategori: **Integration**
+6. Klik "Add"
+7. Find "ForsyningOnline" i listen → klik "Download"
+8. Restart Home Assistant
 
 ### Manuel
 
