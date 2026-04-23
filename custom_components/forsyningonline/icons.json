@@ -1,0 +1,13 @@
+{
+  "integration": "mdi:water",
+  "entity": {
+    "sensor": {
+      "water_total": {
+        "default": "mdi:water"
+      },
+      "water_today": {
+        "default": "mdi:water-pump"
+      }
+    }
+  }
+}
