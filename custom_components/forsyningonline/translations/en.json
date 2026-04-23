@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up ForsyningOnline",
+        "description": "Enter your ForsyningOnline credentials",
+        "data": {
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "select_location": {
+        "title": "Select location",
+        "description": "You have multiple locations. Select one:",
+        "data": {
+          "location": "Location"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid username or password",
+      "cannot_connect": "Failed to connect to ForsyningOnline",
+      "no_locations": "No locations found on your account",
+      "unknown": "Unknown error"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_total": {
+        "name": "Water consumption total"
+      },
+      "water_today": {
+        "name": "Water consumption today"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "domain": "forsyningonline",
+  "name": "ForsyningOnline",
+  "codeowners": ["@denogio"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/denogio/ha-forsyningonline",
+  "issue_tracker": "https://github.com/denogio/ha-forsyningonline/issues",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}

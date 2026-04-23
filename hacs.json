@@ -1,0 +1,7 @@
+{
+  "name": "ForsyningOnline",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "forsyningonline.zip",
+  "homeassistant": "2026.4.0"
+}

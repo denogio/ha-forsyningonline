@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "[%key:common::config_flow::title%]",
+        "description": "Enter your ForsyningOnline credentials",
+        "data": {
+          "username": "[%key:common::config_flow::username%]",
+          "password": "[%key:common::config_flow::password%]"
+        }
+      },
+      "select_location": {
+        "title": "Select location",
+        "description": "You have multiple locations. Select one:",
+        "data": {
+          "location": "Location"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid authentication",
+      "cannot_connect": "Failed to connect",
+      "no_locations": "No locations found",
+      "unknown": "Unknown error"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_total": {
+        "name": "Water consumption total"
+      },
+      "water_today": {
+        "name": "Water consumption today"
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Opsætning af ForsyningOnline",
+        "description": "Indtast dine ForsyningOnline oplysninger",
+        "data": {
+          "username": "Brugernavn",
+          "password": "Kodeord"
+        }
+      },
+      "select_location": {
+        "title": "Vælg lokation",
+        "description": "Du har flere lokationer. Vælg en:",
+        "data": {
+          "location": "Lokation"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ugyldigt brugernavn eller kodeord",
+      "cannot_connect": "Kunne ikke forbinde til ForsyningOnline",
+      "no_locations": "Ingen lokationer fundet på din konto",
+      "unknown": "Ukendt fejl"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "water_total": {
+        "name": "Vandforbrug total"
+      },
+      "water_today": {
+        "name": "Vandforbrug i dag"
+      }
+    }
+  }
+}
