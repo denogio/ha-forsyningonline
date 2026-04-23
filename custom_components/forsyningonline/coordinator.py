@@ -1,6 +1,7 @@
 """Data update coordinator for ForsyningOnline."""
 
 import logging
+import re
 from datetime import datetime, timedelta
 
 from homeassistant.config_entries import ConfigEntry
@@ -89,12 +90,13 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
             async_import_statistics,
         )
 
+        entry_slug = re.sub(r"[^a-z0-9_]", "_", self._entry.entry_id.lower())
         metadata = StatisticMetaData(
             has_mean=False,
             has_sum=True,
             name="ForsyningOnline Water Consumption",
             source=const.DOMAIN,
-            statistic_id=f"{const.DOMAIN}:water_consumption_{self._entry.entry_id}",
+            statistic_id=f"{const.DOMAIN}:water_consumption_{entry_slug}",
             unit_of_measurement="m³",
         )
 
