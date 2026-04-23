@@ -1,6 +1,7 @@
 """API client for ForsyningOnline."""
 
 import logging
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -249,10 +250,19 @@ class ForsyningOnlineClient:
             List of dicts with 'hour' and 'value' keys
         """
         data = self.get_consumption(date, view_scope="hour")
-        return [
-            {"hour": int(v["label"]), "value": v["value"]}
-            for v in data.get("values", [])
-        ]
+        hourly_data: List[Dict[str, Any]] = []
+
+        for entry in data.get("values", []):
+            hour = self._parse_hour_label(entry.get("label", ""))
+            if hour is None:
+                _LOGGER.warning(
+                    "Skipping hourly entry with unparseable label: %s",
+                    entry.get("label"),
+                )
+                continue
+            hourly_data.append({"hour": hour, "value": entry["value"]})
+
+        return hourly_data
 
     def get_yearly_consumption(self) -> List[Dict[str, Any]]:
         """Get yearly consumption data.
@@ -261,10 +271,19 @@ class ForsyningOnlineClient:
             List of dicts with 'year' and 'value' keys
         """
         data = self.get_consumption(view_scope="year")
-        return [
-            {"year": int(v["label"]), "value": v["value"]}
-            for v in data.get("values", [])
-        ]
+        yearly_data: List[Dict[str, Any]] = []
+
+        for entry in data.get("values", []):
+            year = self._parse_int_from_label(entry.get("label", ""))
+            if year is None:
+                _LOGGER.warning(
+                    "Skipping yearly entry with unparseable label: %s",
+                    entry.get("label"),
+                )
+                continue
+            yearly_data.append({"year": year, "value": entry["value"]})
+
+        return yearly_data
 
     def get_monthly_consumption(self, date: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get monthly consumption data.
@@ -278,7 +297,42 @@ class ForsyningOnlineClient:
         if date is None:
             date = datetime.now().strftime("%d-%m-%Y")
         data = self.get_consumption(date, view_scope="month")
-        return [
-            {"day": int(v["label"]), "value": v["value"]}
-            for v in data.get("values", [])
-        ]
+        monthly_data: List[Dict[str, Any]] = []
+
+        for entry in data.get("values", []):
+            day = self._parse_int_from_label(entry.get("label", ""))
+            if day is None:
+                _LOGGER.warning(
+                    "Skipping monthly entry with unparseable label: %s",
+                    entry.get("label"),
+                )
+                continue
+            monthly_data.append({"day": day, "value": entry["value"]})
+
+        return monthly_data
+
+    def _parse_hour_label(self, label: str) -> Optional[int]:
+        """Parse hour labels from API responses.
+
+        Supported formats include:
+        - "0" / "00"
+        - "00:00"
+        - "00:00 - 01:00"
+        """
+        # Prefer start-hour in time/range format if present.
+        match = re.search(r"(\d{1,2}):\d{2}", label)
+        if match:
+            hour = int(match.group(1))
+            return hour if 0 <= hour <= 23 else None
+
+        hour = self._parse_int_from_label(label)
+        if hour is None:
+            return None
+        return hour if 0 <= hour <= 23 else None
+
+    def _parse_int_from_label(self, label: str) -> Optional[int]:
+        """Extract the first integer from a label."""
+        match = re.search(r"\d+", label)
+        if not match:
+            return None
+        return int(match.group(0))
