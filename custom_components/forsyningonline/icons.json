@@ -1,9 +1,9 @@
 {
-  "integration": "mdi:water",
+  "integration": "mdi:water-circle",
   "entity": {
     "sensor": {
       "water_total": {
-        "default": "mdi:water"
+        "default": "mdi:water-circle"
       },
       "water_today": {
         "default": "mdi:water-pump"
