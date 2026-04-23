@@ -3,11 +3,6 @@
 import logging
 from datetime import datetime, timedelta
 
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
-from homeassistant.components.recorder.statistics import (
-    async_import_statistics,
-    Statistics,
-)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -88,6 +83,12 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         """Import hourly consumption data as HA statistics."""
         if not hourly:
             return
+
+        from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+        from homeassistant.components.recorder.statistics import (
+            async_import_statistics,
+            Statistics,
+        )
 
         metadata = StatisticMetaData(
             has_mean=False,
