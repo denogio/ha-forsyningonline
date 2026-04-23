@@ -87,7 +87,6 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
         from homeassistant.components.recorder.statistics import (
             async_import_statistics,
-            Statistics,
         )
 
         metadata = StatisticMetaData(
@@ -112,4 +111,4 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
                 sum=cumsum,
             ))
 
-        async_import_statistics(self.hass, metadata, stats, Statistics)
+        async_import_statistics(self.hass, metadata, stats)
