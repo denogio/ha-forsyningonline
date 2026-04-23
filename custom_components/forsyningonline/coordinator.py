@@ -91,14 +91,10 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         )
 
         entry_slug = re.sub(r"[^a-z0-9_]", "_", self._entry.entry_id.lower())
-        metadata = StatisticMetaData(
-            has_mean=False,
-            has_sum=True,
-            name="ForsyningOnline Water Consumption",
-            source=const.DOMAIN,
-            statistic_id=f"{const.DOMAIN}:water_consumption_{entry_slug}",
-            unit_of_measurement="m³",
-        )
+        statistic_candidates = [
+            (f"{const.DOMAIN}:water_consumption_{entry_slug}", const.DOMAIN),
+            (f"sensor.{const.DOMAIN}_water_consumption_{entry_slug}", "sensor"),
+        ]
 
         today = datetime.now().replace(minute=0, second=0, microsecond=0)
         stats: list[StatisticData] = []
@@ -113,4 +109,27 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
                 sum=cumsum,
             ))
 
-        async_import_statistics(self.hass, metadata, stats)
+        for statistic_id, source in statistic_candidates:
+            metadata = StatisticMetaData(
+                has_mean=False,
+                has_sum=True,
+                name="ForsyningOnline Water Consumption",
+                source=source,
+                statistic_id=statistic_id,
+                unit_of_measurement="m³",
+            )
+            try:
+                async_import_statistics(self.hass, metadata, stats)
+                return
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug(
+                    "Failed statistics import for statistic_id=%s source=%s: %s",
+                    statistic_id,
+                    source,
+                    err,
+                )
+
+        _LOGGER.warning(
+            "Hourly statistics import failed for all statistic_id candidates; "
+            "continuing without statistics import"
+        )

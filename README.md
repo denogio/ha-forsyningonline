@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 ![License](https://img.shields.io/github/license/forsyningonline/ha-forsyningonline)
-![Version](https://img.shields.io/badge/version-0.1.6-green)
+![Version](https://img.shields.io/badge/version-0.1.7-green)
 ![HA Version](https://img.shields.io/badge/HA-2026.4%2B-blue)
 
 Home Assistant integration til [ForsyningOnline.dk](https://forsyningonline.dk) der henter vandforbrugsdata.
