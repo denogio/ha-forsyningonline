@@ -2,11 +2,12 @@
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from . import const
 from .api import ForsyningOnlineClient, ForsyningOnlineApiError
@@ -99,12 +100,12 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         option. Subsequent runs import the last 2 days to catch delayed
         API data.
         """
-        from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+        from homeassistant.components.recorder.models import StatisticData, StatisticMeanType, StatisticMetaData
         from homeassistant.components.recorder.statistics import (
             async_add_external_statistics,
         )
 
-        now = datetime.now()
+        now = dt_util.now()
 
         if self._initial_import_done:
             days_back = 2
@@ -117,7 +118,10 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
                 )
                 if yearly:
                     earliest_year = min(y["year"] for y in yearly)
-                    start_of_earliest = datetime(earliest_year, 1, 1)
+                    start_of_earliest = now.replace(
+                        year=earliest_year, month=1, day=1,
+                        hour=0, minute=0, second=0, microsecond=0,
+                    )
                     days_back = (now - start_of_earliest).days + 1
                 else:
                     days_back = 365
@@ -185,7 +189,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
             stat_name = "ForsyningOnline Water"
 
         metadata = StatisticMetaData(
-            has_mean=False,
+            mean_type=StatisticMeanType.NONE,
             has_sum=True,
             name=stat_name,
             source=const.DOMAIN,
