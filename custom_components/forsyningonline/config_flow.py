@@ -65,6 +65,8 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
         self.locations: list = []
         self.username: str = ""
         self.password: str = ""
+        self._entry_data: Dict[str, Any] = {}
+        self._entry_title: str = ""
 
     async def async_step_user(
         self, user_input: Optional[Dict[str, Any]] = None
@@ -81,17 +83,16 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
 
                 # If only one location, auto-select it
                 if len(self.locations) == 1:
-                    return self.async_create_entry(
-                        title=info["title"],
-                        data={
-                            "username": self.username,
-                            "password": self.password,
-                            const.ATTR_LOCATION: self.locations[0].get("description", "Unknown"),
-                            const.ATTR_UTILITY_NAME: self.locations[0].get("utilityName", "Unknown"),
-                            "location_guid": self.locations[0]["locationGuid"],
-                            "relation_id": self.locations[0]["relationId"],
-                        },
-                    )
+                    self._entry_title = info["title"]
+                    self._entry_data = {
+                        "username": self.username,
+                        "password": self.password,
+                        const.ATTR_LOCATION: self.locations[0].get("description", "Unknown"),
+                        const.ATTR_UTILITY_NAME: self.locations[0].get("utilityName", "Unknown"),
+                        "location_guid": self.locations[0]["locationGuid"],
+                        "relation_id": self.locations[0]["relationId"],
+                    }
+                    return await self.async_step_history()
 
                 # Multiple locations - show selection step
                 return await self.async_step_select_location()
@@ -122,17 +123,16 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
             location_index = int(user_input["location"])
             selected_location = self.locations[location_index]
 
-            return self.async_create_entry(
-                title=f"{selected_location.get('utilityName', 'ForsyningOnline')} - {selected_location.get('description', 'Unknown')}",
-                data={
-                    "username": self.username,
-                    "password": self.password,
-                    const.ATTR_LOCATION: selected_location.get("description", "Unknown"),
-                    const.ATTR_UTILITY_NAME: selected_location.get("utilityName", "Unknown"),
-                    "location_guid": selected_location["locationGuid"],
-                    "relation_id": selected_location["relationId"],
-                },
-            )
+            self._entry_title = f"{selected_location.get('utilityName', 'ForsyningOnline')} - {selected_location.get('description', 'Unknown')}"
+            self._entry_data = {
+                "username": self.username,
+                "password": self.password,
+                const.ATTR_LOCATION: selected_location.get("description", "Unknown"),
+                const.ATTR_UTILITY_NAME: selected_location.get("utilityName", "Unknown"),
+                "location_guid": selected_location["locationGuid"],
+                "relation_id": selected_location["relationId"],
+            }
+            return await self.async_step_history()
 
         # Build location options
         location_schema = vol.Schema(
@@ -150,6 +150,39 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
             step_id="select_location",
             data_schema=location_schema,
             errors=errors,
+        )
+
+    async def async_step_history(
+        self, user_input: Optional[Dict[str, Any]] = None
+    ) -> FlowResult:
+        """Handle history import selection step."""
+        if user_input is not None:
+            self._entry_data["history_days"] = user_input["history_days"]
+            return self.async_create_entry(
+                title=self._entry_title,
+                data=self._entry_data,
+            )
+
+        history_schema = vol.Schema(
+            {
+                vol.Required(
+                    "history_days", default=const.DEFAULT_HISTORY_DAYS
+                ): vol.In(
+                    {
+                        "7": "7 dage",
+                        "30": "30 dage",
+                        "90": "3 måneder",
+                        "180": "6 måneder",
+                        "365": "1 år",
+                        "all": "Al tilgængelig data",
+                    }
+                ),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="history",
+            data_schema=history_schema,
         )
 
     @staticmethod

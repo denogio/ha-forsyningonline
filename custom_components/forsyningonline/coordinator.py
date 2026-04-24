@@ -87,7 +87,8 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         Returns 0 for 'all available data'.
         """
         history_key = self._entry.options.get(
-            "history_days", const.DEFAULT_HISTORY_DAYS
+            "history_days",
+            self._entry.data.get("history_days", const.DEFAULT_HISTORY_DAYS),
         )
         return const.HISTORY_DAYS_OPTIONS.get(history_key, 30)
 
@@ -169,13 +170,26 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
                     )
                 )
 
-        entry_slug = re.sub(r"[^a-z0-9_]", "_", self._entry.entry_id.lower())
+        # Build a clean statistic_id from entry_id (alphanumeric only)
+        entry_key = re.sub(r"[^a-z0-9]", "", self._entry.entry_id.lower())
+        statistic_id = f"{const.DOMAIN}:water_{entry_key}"
+
+        # Use location info for a descriptive name
+        utility = self._entry.data.get(const.ATTR_UTILITY_NAME, "")
+        location = self._entry.data.get(const.ATTR_LOCATION, "")
+        if utility and location:
+            stat_name = f"{utility} - {location}"
+        elif utility:
+            stat_name = utility
+        else:
+            stat_name = "ForsyningOnline Water"
+
         metadata = StatisticMetaData(
             has_mean=False,
             has_sum=True,
-            name="ForsyningOnline Water",
+            name=stat_name,
             source=const.DOMAIN,
-            statistic_id=f"{const.DOMAIN}:water_consumption_{entry_slug}",
+            statistic_id=statistic_id,
             unit_of_measurement="m³",
         )
 

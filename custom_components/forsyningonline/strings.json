@@ -25,6 +25,13 @@
         "data": {
           "location": "Location"
         }
+      },
+      "history": {
+        "title": "Historical data",
+        "description": "How far back should hourly data be imported?",
+        "data": {
+          "history_days": "Historical data import"
+        }
       }
     },
     "error": {

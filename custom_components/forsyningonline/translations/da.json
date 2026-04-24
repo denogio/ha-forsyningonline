@@ -25,6 +25,13 @@
         "data": {
           "location": "Lokation"
         }
+      },
+      "history": {
+        "title": "Historisk data",
+        "description": "Hvor langt tilbage skal timedata importeres?",
+        "data": {
+          "history_days": "Historisk dataimport"
+        }
       }
     },
     "error": {
