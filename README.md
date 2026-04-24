@@ -1,8 +1,8 @@
 # ForsyningOnline Integration for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
-![License](https://img.shields.io/github/license/forsyningonline/ha-forsyningonline)
-![Version](https://img.shields.io/badge/version-0.1.7-green)
+![License](https://img.shields.io/github/license/denogio/ha-forsyningonline)
+![Version](https://img.shields.io/badge/version-0.2.0-green)
 ![HA Version](https://img.shields.io/badge/HA-2026.4%2B-blue)
 
 Home Assistant integration til [ForsyningOnline.dk](https://forsyningonline.dk) der henter vandforbrugsdata.
@@ -11,17 +11,18 @@ Home Assistant integration til [ForsyningOnline.dk](https://forsyningonline.dk) 
 
 - 💧 **HA Energy kompatibel** - Virker med Home Assistant Energy dashboard
 - 📊 **Korrekt timefordeling** - Historisk timedata importeres med korrekte timestamps
+- 📅 **Konfigurerbar historik** - Importer fra 7 dage til al tilgængelig data
 - 🏠 **Flere lokationer** - Understøtter flere vandværk/adresser
-- ⚙️ **Konfigurerbart** - Juster opdateringsinterval via options
+- ⚙️ **Konfigurerbart** - Juster opdateringsinterval og historikdybde via options
 
 ## Sensors
 
-| Entity | Beskrivelse | HA Energy |
-|--------|-------------|-----------|
-| `sensor.<lokation>_water_total` | Samlet vandforbrug (m³) | ✓ |
-| `sensor.<lokation>_water_today` | Dagens vandforbrug (m³) | |
+| Entity | Beskrivelse |
+|--------|-------------|
+| `sensor.<lokation>_water_total` | Samlet vandforbrug (m³) |
+| `sensor.<lokation>_water_today` | Dagens vandforbrug (m³) |
 
-Timedata importeres automatisk som HA statistik, så Energy dashboardet viser forbrug fordelt på de korrekte timer — selvom data fra API'et er forsinket.
+Timedata importeres automatisk som ekstern HA statistik (`forsyningonline:water_consumption_...`), så Energy dashboardet viser forbrug fordelt på de korrekte timer — selvom data fra API'et er forsinket.
 
 ## Installation
 
@@ -60,7 +61,20 @@ For at tilføje vandforbrug til dit Energy dashboard:
 1. Gå til **Energy** dashboardet
 2. Klik på **Menu** → **Energy**
 3. Under "Water consumption" → **Add consumption**
-4. Vælg `sensor.<lokation>_water_total`
+4. Vælg statistikken `forsyningonline:water_consumption_...`
+
+> **Bemærk:** Vælg den eksterne statistik — ikke sensor-entiteten. Statistikken indeholder korrekt timefordelt data.
+
+## Indstillinger
+
+Under integrationsindstillinger (Options) kan du justere:
+
+| Indstilling | Beskrivelse | Standard |
+|-------------|-------------|----------|
+| Opdateringsinterval | Hvor ofte der hentes nye data (sekunder) | 3600 (1 time) |
+| Historisk dataimport | Hvor langt tilbage der importeres ved opstart | 30 dage |
+
+Valgmuligheder for historisk import: 7 dage, 30 dage, 3 måneder, 6 måneder, 1 år, eller al tilgængelig data.
 
 ## Fejlsøgning
 
@@ -71,8 +85,12 @@ For at tilføje vandforbrug til dit Energy dashboard:
 ### Ingen data efter opsætning
 - Vent på første data opdatering (op til 1 time)
 - Data fra ForsyningOnline API'et kan være forsinket med flere timer
-- Check "Developer Tools" → "States" for at se sensor-værdier
+- Check "Developer Tools" → "Statistics" for at se importeret data
 - Tjek HA logs for fejl
+
+### Forbrug vises ikke i Energy dashboard
+- Sørg for at vælge den eksterne statistik (`forsyningonline:water_consumption_...`), ikke sensor-entiteten
+- Tjek under "Developer Tools" → "Statistics" at data er importeret
 
 ## License
 
