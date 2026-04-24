@@ -195,6 +195,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
             source=const.DOMAIN,
             statistic_id=statistic_id,
             unit_of_measurement="m³",
+            unit_class="volume",
         )
 
         try:
