@@ -197,10 +197,6 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
 class ForsyningOnlineOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for ForsyningOnline."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry):
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(
         self, user_input: Optional[Dict[str, Any]] = None
     ) -> FlowResult:

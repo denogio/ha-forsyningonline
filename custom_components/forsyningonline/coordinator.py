@@ -101,7 +101,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         """
         from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
         from homeassistant.components.recorder.statistics import (
-            async_import_statistics,
+            async_add_external_statistics,
         )
 
         now = datetime.now()
@@ -194,7 +194,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         )
 
         try:
-            async_import_statistics(self.hass, metadata, all_stats)
+            async_add_external_statistics(self.hass, metadata, all_stats)
             self._initial_import_done = True
             _LOGGER.debug(
                 "Imported %d hourly statistics entries (%d days)",
