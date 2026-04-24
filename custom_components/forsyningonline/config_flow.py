@@ -180,6 +180,21 @@ class ForsyningOnlineOptionsFlow(config_entries.OptionsFlow):
                 "scan_interval",
                 default=self.config_entry.options.get("scan_interval", 3600),
             ): vol.All(vol.Coerce(int), vol.Range(min=300, max=86400)),
+            vol.Optional(
+                "history_days",
+                default=self.config_entry.options.get(
+                    "history_days", const.DEFAULT_HISTORY_DAYS
+                ),
+            ): vol.In(
+                {
+                    "7": "7 dage",
+                    "30": "30 dage",
+                    "90": "3 måneder",
+                    "180": "6 måneder",
+                    "365": "1 år",
+                    "all": "Al tilgængelig data",
+                }
+            ),
         }
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(options))

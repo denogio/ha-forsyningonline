@@ -39,6 +39,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         self.location_guid = location_guid
         self.relation_id = relation_id
         self._entry = entry
+        self._initial_import_done = False
 
     async def _async_update_data(self) -> dict:
         """Fetch data from ForsyningOnline."""
@@ -65,7 +66,7 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
             total_consumption = sum(y["value"] for y in yearly)
 
             # Import hourly statistics for Energy dashboard
-            self._import_hourly_statistics(hourly)
+            await self._async_import_hourly_statistics(total_consumption)
 
             return {
                 "hourly": hourly,
@@ -80,56 +81,113 @@ class ForsyningOnlineUpdateCoordinator(DataUpdateCoordinator):
         except Exception as err:
             raise UpdateFailed(f"Unexpected error: {err}") from err
 
-    def _import_hourly_statistics(self, hourly: list[dict]) -> None:
-        """Import hourly consumption data as HA statistics."""
-        if not hourly:
-            return
+    def _get_initial_days_back(self) -> int:
+        """Get number of days to import on first run from options.
 
+        Returns 0 for 'all available data'.
+        """
+        history_key = self._entry.options.get(
+            "history_days", const.DEFAULT_HISTORY_DAYS
+        )
+        return const.HISTORY_DAYS_OPTIONS.get(history_key, 30)
+
+    async def _async_import_hourly_statistics(self, total_consumption: float) -> None:
+        """Import hourly consumption data as HA statistics.
+
+        On first run, imports historical data based on the history_days
+        option. Subsequent runs import the last 2 days to catch delayed
+        API data.
+        """
         from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
         from homeassistant.components.recorder.statistics import (
             async_import_statistics,
         )
 
-        entry_slug = re.sub(r"[^a-z0-9_]", "_", self._entry.entry_id.lower())
-        statistic_candidates = [
-            (f"{const.DOMAIN}:water_consumption_{entry_slug}", const.DOMAIN),
-            (f"sensor.{const.DOMAIN}_water_consumption_{entry_slug}", "sensor"),
-        ]
+        now = datetime.now()
 
-        today = datetime.now().replace(minute=0, second=0, microsecond=0)
-        stats: list[StatisticData] = []
-        cumsum = 0.0
+        if self._initial_import_done:
+            days_back = 2
+        else:
+            days_back = self._get_initial_days_back()
+            if days_back == 0:
+                # "all" — calculate from yearly data
+                yearly = await self.hass.async_add_executor_job(
+                    self.client.get_yearly_consumption
+                )
+                if yearly:
+                    earliest_year = min(y["year"] for y in yearly)
+                    start_of_earliest = datetime(earliest_year, 1, 1)
+                    days_back = (now - start_of_earliest).days + 1
+                else:
+                    days_back = 365
 
-        for hour_data in hourly:
-            cumsum += hour_data["value"]
-            hour_start = today.replace(hour=hour_data["hour"])
-            stats.append(StatisticData(
-                start=hour_start,
-                state=cumsum,
-                sum=cumsum,
-            ))
+        _LOGGER.debug(
+            "Importing hourly statistics for %d days (initial=%s)",
+            days_back,
+            not self._initial_import_done,
+        )
 
-        for statistic_id, source in statistic_candidates:
-            metadata = StatisticMetaData(
-                has_mean=False,
-                has_sum=True,
-                name="ForsyningOnline Water Consumption",
-                source=source,
-                statistic_id=statistic_id,
-                unit_of_measurement="m³",
-            )
+        # Fetch hourly data for each day (oldest first)
+        daily_hourly: dict[datetime, list[dict]] = {}
+        for days_ago in range(days_back - 1, -1, -1):
+            target = now - timedelta(days=days_ago)
+            date_str = target.strftime("%d-%m-%Y")
             try:
-                async_import_statistics(self.hass, metadata, stats)
-                return
-            except Exception as err:  # noqa: BLE001
-                _LOGGER.debug(
-                    "Failed statistics import for statistic_id=%s source=%s: %s",
-                    statistic_id,
-                    source,
-                    err,
+                hourly = await self.hass.async_add_executor_job(
+                    self.client.get_hourly_consumption, date_str
+                )
+            except Exception:  # noqa: BLE001
+                _LOGGER.debug("Failed to fetch hourly data for %s", date_str)
+                continue
+            if hourly:
+                day_start = target.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+                daily_hourly[day_start] = hourly
+
+        if not daily_hourly:
+            return
+
+        # base = total meter reading before the imported period
+        imported_total = sum(
+            sum(h["value"] for h in hours)
+            for hours in daily_hourly.values()
+        )
+        base = total_consumption - imported_total
+
+        # Build statistics with correct cumulative sum
+        all_stats: list[StatisticData] = []
+        running_sum = base
+        for day_start in sorted(daily_hourly.keys()):
+            for h in daily_hourly[day_start]:
+                running_sum += h["value"]
+                all_stats.append(
+                    StatisticData(
+                        start=day_start.replace(hour=h["hour"]),
+                        state=h["value"],
+                        sum=running_sum,
+                    )
                 )
 
-        _LOGGER.warning(
-            "Hourly statistics import failed for all statistic_id candidates; "
-            "continuing without statistics import"
+        entry_slug = re.sub(r"[^a-z0-9_]", "_", self._entry.entry_id.lower())
+        metadata = StatisticMetaData(
+            has_mean=False,
+            has_sum=True,
+            name="ForsyningOnline Water",
+            source=const.DOMAIN,
+            statistic_id=f"{const.DOMAIN}:water_consumption_{entry_slug}",
+            unit_of_measurement="m³",
         )
+
+        try:
+            async_import_statistics(self.hass, metadata, all_stats)
+            self._initial_import_done = True
+            _LOGGER.debug(
+                "Imported %d hourly statistics entries (%d days)",
+                len(all_stats),
+                len(daily_hourly),
+            )
+        except Exception:  # noqa: BLE001
+            _LOGGER.warning(
+                "Failed to import hourly statistics", exc_info=True
+            )

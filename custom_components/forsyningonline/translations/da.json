@@ -1,4 +1,14 @@
 {
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Opdateringsinterval (sekunder)",
+          "history_days": "Historisk dataimport"
+        }
+      }
+    }
+  },
   "config": {
     "step": {
       "user": {

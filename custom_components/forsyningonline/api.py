@@ -319,11 +319,28 @@ class ForsyningOnlineClient:
         - "00:00"
         - "00:00 - 01:00"
         """
-        # Prefer start-hour in time/range format if present.
-        match = re.search(r"(\d{1,2}):\d{2}", label)
-        if match:
-            hour = int(match.group(1))
-            return hour if 0 <= hour <= 23 else None
+        # Range labels are already interval-start based, e.g. "00:00 - 01:00" -> 0.
+        range_match = re.fullmatch(
+            r"\s*(\d{1,2}):\d{2}\s*-\s*(\d{1,2}):\d{2}\s*", label
+        )
+        if range_match:
+            start_hour = int(range_match.group(1))
+            return start_hour if 0 <= start_hour <= 23 else None
+
+        # Single timestamp labels are treated as interval-end markers.
+        # "01:00" therefore maps to interval 00:00-01:00 (hour 0).
+        point_match = re.fullmatch(r"\s*(\d{1,2}):\d{2}\s*", label)
+        if point_match:
+            end_hour = int(point_match.group(1))
+            if not 0 <= end_hour <= 23:
+                return None
+            if end_hour == 0:
+                _LOGGER.debug(
+                    "Skipping point-based hour label at 00:00 (belongs to previous day): %s",
+                    label,
+                )
+                return None
+            return end_hour - 1
 
         hour = self._parse_int_from_label(label)
         if hour is None:

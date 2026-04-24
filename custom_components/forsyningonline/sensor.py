@@ -62,7 +62,6 @@ class ForsyningOnlineTotalWaterSensor(ForsyningOnlineSensor):
         self._attr_icon = "mdi:water"
         self._attr_native_unit_of_measurement = "m³"
         self._attr_device_class = SensorDeviceClass.WATER
-        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_suggested_display_precision = 3
 
     @property
