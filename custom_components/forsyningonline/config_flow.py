@@ -191,7 +191,7 @@ class ForsyningOnlineConfigFlow(config_entries.ConfigFlow, domain=const.DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
-        return ForsyningOnlineOptionsFlow(config_entry)
+        return ForsyningOnlineOptionsFlow()
 
 
 class ForsyningOnlineOptionsFlow(config_entries.OptionsFlow):
