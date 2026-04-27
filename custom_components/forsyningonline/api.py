@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 API_BASE = "https://api-forsyningonline.azurewebsites.net/api"
-WATER_CONSUMPTION_PAGE_ID = "1F8F82F6-3352-454E-A25C-17E94051681A"
+DEFAULT_START_PAGE_ID = "00000000-4ad4-431b-b678-d25c7124fe37"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class ForsyningOnlineClient:
         self._current_location: Optional[Dict[str, str]] = None
         self._locations: List[Dict[str, Any]] = []
         self._debug_mode: bool = False
+        self._water_page_id: Optional[str] = None
 
         # Set default headers
         self.session.headers.update(
@@ -176,6 +177,33 @@ class ForsyningOnlineClient:
         }
         return True
 
+    def _discover_water_page_id(self) -> Optional[str]:
+        """Discover water consumption page ID from the start page.
+
+        Returns:
+            The pageId for water consumption, or None if not found.
+        """
+        try:
+            response = self.session.post(
+                f"{API_BASE}/relay/page",
+                json={"pageId": DEFAULT_START_PAGE_ID},
+                timeout=10,
+            )
+            if response.status_code != 200:
+                return None
+
+            data = response.json()
+            for section in data.get("sections", []):
+                for content in section.get("content", []):
+                    if content.get("elementType") == 14:
+                        page_requests = content.get("pageRequests", [])
+                        value1 = content.get("value1", "")
+                        if "Vandforbrug" in value1 and page_requests:
+                            return page_requests[0].get("pageId")
+        except Exception:
+            pass
+        return None
+
     def get_consumption(
         self,
         date: Optional[str] = None,
@@ -198,8 +226,16 @@ class ForsyningOnlineClient:
         if date is None:
             date = datetime.now().strftime("%d-%m-%Y")
 
+        if self._water_page_id is None:
+            self._water_page_id = self._discover_water_page_id()
+            if self._water_page_id is None:
+                raise ForsyningOnlineApiError(
+                    "Could not discover water pageId from start page"
+                )
+            _LOGGER.info("Discovered water pageId: %s", self._water_page_id)
+
         payload = {
-            "pageId": WATER_CONSUMPTION_PAGE_ID,
+            "pageId": self._water_page_id,
             "option": {
                 "getAnswer": "YES",
                 "form": {
