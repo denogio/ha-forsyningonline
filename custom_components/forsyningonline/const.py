@@ -22,3 +22,7 @@ HISTORY_DAYS_OPTIONS = {
     "all": 0,  # 0 = all available data
 }
 DEFAULT_HISTORY_DAYS = "30"
+
+# Debug mode
+ATTR_DEBUG_MODE = "debug_mode"
+DEBUG_MODE_DEFAULT = False

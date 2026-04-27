@@ -224,6 +224,10 @@ class ForsyningOnlineOptionsFlow(config_entries.OptionsFlow):
                     "all": "Al tilgængelig data",
                 }
             ),
+            vol.Optional(
+                const.ATTR_DEBUG_MODE,
+                default=self.config_entry.options.get(const.ATTR_DEBUG_MODE, const.DEBUG_MODE_DEFAULT),
+            ): bool,
         }
 
         return self.async_show_form(step_id="init", data_schema=vol.Schema(options))

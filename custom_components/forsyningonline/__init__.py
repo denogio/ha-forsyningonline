@@ -30,6 +30,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create API client
     client = ForsyningOnlineClient(username, password)
 
+    # Enable debug mode if configured
+    debug_mode = entry.options.get(const.ATTR_DEBUG_MODE, const.DEBUG_MODE_DEFAULT)
+    if debug_mode:
+        client.set_debug_mode(True)
+        _LOGGER.info("Debug mode enabled for ForsyningOnline")
+
     # Login
     try:
         await hass.async_add_executor_job(client.login)

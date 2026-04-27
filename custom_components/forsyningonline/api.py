@@ -43,6 +43,7 @@ class ForsyningOnlineClient:
         self._auth_data: Optional[Dict[str, Any]] = None
         self._current_location: Optional[Dict[str, str]] = None
         self._locations: List[Dict[str, Any]] = []
+        self._debug_mode: bool = False
 
         # Set default headers
         self.session.headers.update(
@@ -53,6 +54,10 @@ class ForsyningOnlineClient:
                 "Referer": "https://forsyningonline.dk/",
             }
         )
+
+    def set_debug_mode(self, enabled: bool) -> None:
+        """Enable or disable debug mode for verbose logging."""
+        self._debug_mode = enabled
 
     def login(self) -> bool:
         """Login to ForsyningOnline.
@@ -100,7 +105,18 @@ class ForsyningOnlineClient:
             ForsyningOnlineApiError: If request fails after retry
         """
         kwargs.setdefault("timeout", 10)
+
+        if self._debug_mode:
+            _LOGGER.debug("API Request: %s %s\nPayload: %s", method.upper(), url, kwargs.get("json", ""))
+
         response = self.session.request(method, url, **kwargs)
+
+        if self._debug_mode:
+            _LOGGER.debug(
+                "API Response: %s %s -> %d\nBody: %s",
+                method.upper(), url, response.status_code,
+                response.text[:1000] if response.text else "empty"
+            )
 
         if response.status_code == 401:
             _LOGGER.warning("Got 401, trying to re-login")
@@ -108,6 +124,12 @@ class ForsyningOnlineClient:
             response = self.session.request(method, url, **kwargs)
 
         if response.status_code != 200:
+            error_body = response.text[:500] if response.text else "empty"
+            _LOGGER.error(
+                "API request failed: %s %s -> %d\nHeaders: %s\nBody: %s",
+                method.upper(), url, response.status_code,
+                dict(response.headers), error_body
+            )
             raise ForsyningOnlineApiError(
                 f"Request failed: {method.upper()} {url} - {response.status_code}"
             )
@@ -145,6 +167,8 @@ class ForsyningOnlineClient:
             f"{API_BASE}/relay/Location/set",
             json={"locationGuid": location_guid, "relationId": relation_id},
         )
+
+        _LOGGER.debug("Location set: guid=%s relationId=%s", location_guid, relation_id)
 
         self._current_location = {
             "locationGuid": location_guid,
@@ -188,6 +212,11 @@ class ForsyningOnlineClient:
 
         response = self._request_with_retry(
             "post", f"{API_BASE}/relay/page", json=payload
+        )
+
+        _LOGGER.debug(
+            "get_consumption response: date=%s view_scope=%s meter=%s",
+            date, view_scope, meter
         )
 
         return self._parse_consumption_data(response.json(), view_scope)
